@@ -34,6 +34,7 @@ import os, sys
 from optparse import OptionParser
 from string import count
 import ConfigParser
+import os.path
 
 # Set > 0 if you whant print terminal information
 DEBUG = 1
@@ -80,6 +81,17 @@ if( DEBUG > 0 ):
     print "Data Center name: '" + DATACENTER + "'"
     print "VMIGNORE file: '" + VMIGNORE + "'"
 
+# check if file VMIGNORE exist
+try:
+    if os.path.isfile(VMIGNORE):
+        if( DEBUG > 0 ):
+            print 'Using file ' + VMIGNORE + ' to ignore VM'
+    else:
+        sys.exit(1)
+except:
+    print 'Error: file ' + VMIGNORE + ' does not exist exit'
+    sys.exit(1)
+
 # get auth user / pass
 try:
     Config = ConfigParser.ConfigParser()
@@ -112,6 +124,20 @@ except:
     print "Error on reading auth file: " + AUTH_FILE
     sys.exit(1)
 
+def checkDCExist( datacentername ):
+    if( DEBUG > 0 ):
+        print "Check if DC exist and is up: '" + datacentername + "'"
+    dc = api.datacenters.get(name=datacentername)
+    if dc == None:
+        print "Error: DC " + datacentername + " doesn't exist... Exit"
+        sys.exit(1)
+    else:
+        print "DC " + datacentername + " is present...continue"
+    dcstat = dc.get_status().state
+    if dcstat != "up":
+        print "Error: DC " + datacentername + " is not up... Exit"
+        sys.exit(1)
+
 # connect to rhevm
 try:
     if( DEBUG > 0):
@@ -121,7 +147,43 @@ try:
     api = API(ENGINE_CONN, insecure=True, username=SUSERNAME, password=SPASSWORD)
     if( DEBUG > 0):
         print 'Connection established to the engine: ' + ENGINE_CONN
-     
+    
+    # verify if datacenter is up
+    EXIT_ON = "CHECKDC"
+    checkDCExist(DATACENTER)
+    
+    # list cluster
+    EXIT_ON = 'LISTCLUSTER'
+    clulist = api.clusters.list( "datacenter=" + DATACENTER )
+    for clu in clulist:
+        if( DEBUG > 0):
+            print "Found cluster " + clu.get_name()
+        
+        # now list all VMs on cluster
+        EXIT_ON = 'LISTVM'
+        vmlist = api.vms.list( "cluster=" + clu.get_name(), max=10000)
+        for vm in vmlist:
+            if( DEBUG > 0):
+                print "Check VMNAME for VM " + vm.get_name()
+            
+            # check if vm is up
+            if vm.get_status().state == "up":
+                if( DEBUG > 0):
+                    print "VM " + vm.get_name() + " is up"
+                
+                # now check if VM is inside vmignore file
+                SKIPVM = False
+                with open( VMIGNORE ) as f:
+                    for line in f:
+                        if vm.get_name() == line.strip():
+                            SKIPVM = True
+                if SKIPVM:
+                    print "VM " + vm.get_name() + " is on file " + VMIGNORE + "...skipping"
+                    continue
+                else:
+                    print "MIGRATING " + vm.get_name() 
+            else:
+                print "VM " + vm.get_name() + " is not up...skipping"
     
 except:
     if EXIT_ON == '':
