@@ -186,7 +186,7 @@ def vmNamePlusOne( vmname ):
 def launchMigration( vm1, vm2 ):
     print "ciao"
 
-# connect to rhevm
+# connect to engine
 try:
     if( DEBUG > 0):
         print 'Now try to connect to the engine: ' + ENGINE_CONN
