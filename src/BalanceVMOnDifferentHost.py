@@ -35,6 +35,7 @@ from optparse import OptionParser
 from string import count
 import ConfigParser
 import os.path
+import re 
 
 # Set > 0 if you whant print terminal information
 DEBUG = 1
@@ -48,15 +49,15 @@ ENGINE_CONN = ''
 SUSERNAME = ''
 SPASSWORD = ''
 
-#FIXME: make this variable parameter
-AUTH_FILE = '/home/amedeo/DR/.authpass'
-
 EXIT_ON = ''
 
 parser = OptionParser()
-usagestr = "usage: %prog [options] --datacenter DATACENTERNAME --vmignore filename-of-vms-to-ignore"
+usagestr = "usage: %prog [options] --authfile AUTHFILE --datacenter DATACENTERNAME --vmignore filename-of-vms-to-ignore"
 
 parser = OptionParser(usage=usagestr, version="%prog Version: " + VERSION)
+
+parser.add_option("--authfile", type="string",dest="AUTH_FILE", 
+                  help="Authorization File name")
 
 parser.add_option("--datacenter", type="string",dest="DATACENTER", 
                   help="Data Center name where try to balance VMs")
@@ -66,6 +67,10 @@ parser.add_option("--vmignore", type="string",dest="VMIGNORE",
 
 (options, args) = parser.parse_args()
 
+if options.AUTH_FILE == "" or not options.AUTH_FILE:
+    parser.error("incorrect number of arguments")
+    sys.exit(1)
+
 if options.DATACENTER == "" or not options.DATACENTER:
     parser.error("incorrect number of arguments")
     sys.exit(1)
@@ -74,6 +79,7 @@ if options.VMIGNORE == "" or not options.VMIGNORE:
     parser.error("incorrect number of arguments")
     sys.exit(1)
 
+AUTH_FILE = options.AUTH_FILE
 DATACENTER = options.DATACENTER
 VMIGNORE = options.VMIGNORE
 
@@ -181,7 +187,9 @@ try:
                     print "VM " + vm.get_name() + " is on file " + VMIGNORE + "...skipping"
                     continue
                 else:
-                    print "MIGRATING " + vm.get_name() 
+                    if( DEBUG > 0):
+                        print "Check VM name " + vm.get_name() 
+                        print "ciao"
             else:
                 print "VM " + vm.get_name() + " is not up...skipping"
     
