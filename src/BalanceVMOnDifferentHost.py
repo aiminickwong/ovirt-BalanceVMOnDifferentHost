@@ -37,6 +37,7 @@ import ConfigParser
 import os.path
 import re 
 
+#FIXME: make DEBUG an optional parameter
 # Set > 0 if you whant print terminal information
 DEBUG = 1
 
@@ -84,6 +85,7 @@ DATACENTER = options.DATACENTER
 VMIGNORE = options.VMIGNORE
 
 if( DEBUG > 0 ):
+    print "Authorization filename: '" + AUTH_FILE + "'"
     print "Data Center name: '" + DATACENTER + "'"
     print "VMIGNORE file: '" + VMIGNORE + "'"
 
@@ -109,23 +111,30 @@ try:
         if len( Config.sections() ) == 0:
             print "Error: Wrong auth file: " + AUTH_FILE + ", now exit"
             sys.exit(1)
-    print "Try to read Username from " + AUTH_FILE
+    if( DEBUG > 0 ):
+        print "Try to read Username from " + AUTH_FILE
     SUSERNAME = Config.get("Auth", "Username")
-    print "Found Username: " + SUSERNAME
-    print "Try to read Password from " + AUTH_FILE
+    if( DEBUG > 0 ):
+        print "Found Username: " + SUSERNAME
+        print "Try to read Password from " + AUTH_FILE
     SPASSWORD = Config.get("Auth", "Password")
-    print "Found Password: ***********"
-    print "Try to read Hostname from " + AUTH_FILE
+    if( DEBUG > 0 ):
+        print "Found Password: ***********"
+        print "Try to read Hostname from " + AUTH_FILE
     SHOSTNAME = Config.get("Auth", "Hostname")
-    print "Found Hostname: " + SHOSTNAME
-    print "Try to read protocol from " + AUTH_FILE
+    if( DEBUG > 0 ):
+        print "Found Hostname: " + SHOSTNAME
+        print "Try to read protocol from " + AUTH_FILE
     SPROTOCOL = Config.get("Auth", "Protocol")
-    print "Found Protocol: " + SPROTOCOL
-    print "Try to read Port from " + AUTH_FILE
+    if( DEBUG > 0 ):
+        print "Found Protocol: " + SPROTOCOL
+        print "Try to read Port from " + AUTH_FILE
     SPORT = Config.get("Auth", "Port")
-    print "Found Port: " + SPORT
+    if( DEBUG > 0 ):
+        print "Found Port: " + SPORT
     ENGINE_CONN = SPROTOCOL + '://' + SHOSTNAME + ':' + SPORT
-    print "Connection string: " + ENGINE_CONN
+    if( DEBUG > 0 ):
+        print "Connection string: " + ENGINE_CONN
 except:
     print "Error on reading auth file: " + AUTH_FILE
     sys.exit(1)
@@ -143,6 +152,39 @@ def checkDCExist( datacentername ):
     if dcstat != "up":
         print "Error: DC " + datacentername + " is not up... Exit"
         sys.exit(1)
+
+def checkVMNameAndOdd( vmname ):
+    try:
+        searchObj = re.search( r'(\D*)(\d*)', vmname, re.M|re.I)
+        if len( searchObj.groups() ) == 2:
+            if( DEBUG > 0):
+                print ( "For VM %s found pattern %s and digit %s" %(vmname, searchObj.group(1), searchObj.group(2)))
+            # now check if is odd
+            if ( int( searchObj.group(2) ) % 2 == 0 ):
+                return False
+            else:
+                return True
+    except:
+        print "Error when trying to find pattern"
+        return False
+
+def vmNamePlusOne( vmname ):
+    try:
+        searchObj = re.search( r'(\D*)(\d*)', vmname, re.M|re.I)
+        if len( searchObj.groups() ) == 2:
+            i = int( searchObj.group(2) )
+            i = i + 1
+            vm2 = str( searchObj.group(1) )
+            vm2 =  vm2 + str(i).zfill( len( searchObj.group(2) ) )
+            if( DEBUG > 0):
+                print ( "For VM %s build second VM name (plus one) %s" %( vmname, vm2 ) )
+            return vm2
+    except:
+        print "Error: Error on vmNamePlusOne...Exit"
+        sys.exit(1)
+
+def launchMigration( vm1, vm2 ):
+    print "ciao"
 
 # connect to rhevm
 try:
@@ -189,7 +231,13 @@ try:
                 else:
                     if( DEBUG > 0):
                         print "Check VM name " + vm.get_name() 
-                        print "ciao"
+                        if checkVMNameAndOdd( vm.get_name() ):
+                            if( DEBUG > 0):
+                                print ("VM %s is odd, so is a candidate for balance" %(vm.get_name()))
+                                vm1 = vm.get_name()
+                                vm2 = vmNamePlusOne( vm1 )
+                                if (vm2 != None) and vm2 != "":
+                                    launchMigration(vm1, vm2)
             else:
                 print "VM " + vm.get_name() + " is not up...skipping"
     
