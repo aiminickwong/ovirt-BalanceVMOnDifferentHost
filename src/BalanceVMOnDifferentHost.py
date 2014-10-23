@@ -35,11 +35,12 @@ from optparse import OptionParser
 from string import count
 import ConfigParser
 import os.path
-import re 
+import re
+from subprocess import call
 
 #FIXME: make DEBUG an optional parameter
 # Set > 0 if you whant print terminal information
-DEBUG = 1
+DEBUG = 0
 
 VERSION = "0.1"
 
@@ -155,7 +156,7 @@ def checkDCExist( datacentername ):
 
 def checkVMNameAndOdd( vmname ):
     try:
-        searchObj = re.search( r'(\D*)(\d*)', vmname, re.M|re.I)
+        searchObj = re.search( r'^(\D\w*\D)(\d*)$', vmname, re.M|re.I)
         if len( searchObj.groups() ) == 2:
             if( DEBUG > 0):
                 print ( "For VM %s found pattern %s and digit %s" %(vmname, searchObj.group(1), searchObj.group(2)))
@@ -170,7 +171,7 @@ def checkVMNameAndOdd( vmname ):
 
 def vmNamePlusOne( vmname ):
     try:
-        searchObj = re.search( r'(\D*)(\d*)', vmname, re.M|re.I)
+        searchObj = re.search( r'^(\D\w*\D)(\d*)$', vmname, re.M|re.I)
         if len( searchObj.groups() ) == 2:
             i = int( searchObj.group(2) )
             i = i + 1
@@ -184,7 +185,20 @@ def vmNamePlusOne( vmname ):
         sys.exit(1)
 
 def launchMigration( vm1, vm2 ):
-    print "ciao"
+    try:
+        d = os.path.dirname(os.path.realpath(__file__))
+        if( DEBUG > 1):
+            print ( "Directory containing executables: %s" %( d ) )
+        fexec = d + "/MigrateVM.py"
+        if( DEBUG > 1):
+            print ( "Full path of executable: %s" %(fexec) )
+        
+        call([ fexec, "--authfile", AUTH_FILE, "--vmname1", vm1, "--vmname2", vm2 ])
+    except Exception,e:
+        if( DEBUG > 0):
+            print "Error launching MigrateVM.py...Skip"
+            print str(e)
+        return
 
 # connect to engine
 try:
@@ -231,13 +245,13 @@ try:
                 else:
                     if( DEBUG > 0):
                         print "Check VM name " + vm.get_name() 
-                        if checkVMNameAndOdd( vm.get_name() ):
-                            if( DEBUG > 0):
-                                print ("VM %s is odd, so is a candidate for balance" %(vm.get_name()))
-                                vm1 = vm.get_name()
-                                vm2 = vmNamePlusOne( vm1 )
-                                if (vm2 != None) and vm2 != "":
-                                    launchMigration(vm1, vm2)
+                    if checkVMNameAndOdd( vm.get_name() ):
+                        if( DEBUG > 0):
+                            print ("VM %s is odd, so is a candidate for balance" %(vm.get_name()))
+                        vm1 = vm.get_name()
+                        vm2 = vmNamePlusOne( vm1 )
+                        if (vm2 != None) and vm2 != "":
+                            launchMigration(vm1, vm2)
             else:
                 print "VM " + vm.get_name() + " is not up...skipping"
     
