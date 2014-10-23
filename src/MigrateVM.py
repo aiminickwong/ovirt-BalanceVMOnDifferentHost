@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # -*- coding: utf-8 -*-
 
 """
@@ -146,6 +146,11 @@ try:
         print "VM: '" + VMNAME2 + "' doesn't exist... Exit"
         sys.exit(1)
     
+    # check if VM is not the same
+    if VMNAME1 == VMNAME2:
+        print ( "vmname1 and vmname2 parameters are equals (%s)...Exit" %( VMNAME1 ) )
+        sys.exit(1)
+    
     # check if VMs are up
     EXIT_ON = 'GET_VM_STAT'
     
@@ -164,11 +169,11 @@ try:
     
     vm1host = vm1.get_host()
     if ( DEBUG > 0 ):
-            print "VM " + VMNAME1 + " running su " + vm1host.get_id()
+        print ( "VM %s running on %s" %( VMNAME1, vm1host.get_id() ) )
     
     vm2host = vm2.get_host()
     if ( DEBUG > 0 ):
-            print "VM " + VMNAME2 + " running su " + vm2host.get_id()
+        print ( "VM %s running on %s" %( VMNAME2, vm2host.get_id() ) )
     
     EXIT_ON = 'CHECK_HOST'
     if vm1host.get_id() == vm2host.get_id():
@@ -184,3 +189,6 @@ except:
         print 'Error: Connection failed to server: ' + ENGINE_CONN
     else:
         print 'Error on ' + EXIT_ON
+finally:
+    if api != None:
+        api.disconnect()
