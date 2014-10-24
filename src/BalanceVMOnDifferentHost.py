@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # -*- coding: utf-8 -*-
 
 """
@@ -40,7 +40,7 @@ from subprocess import call
 
 #FIXME: make DEBUG an optional parameter
 # Set > 0 if you whant print terminal information
-DEBUG = 0
+DEBUG = 1
 
 VERSION = "0.1"
 
