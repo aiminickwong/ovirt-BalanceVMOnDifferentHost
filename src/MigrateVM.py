@@ -178,9 +178,17 @@ try:
     EXIT_ON = 'CHECK_HOST'
     if vm1host.get_id() == vm2host.get_id():
         print "Migrating " + VMNAME2
-        vm2.migrate()
-        #FIXME: make sleeptime an optional parameter
-        sleep(5)
+        try:
+            #FIXME: check if vm has fixed host and only manual migration
+            vm2.migrate()
+            #FIXME: make sleeptime an optional parameter
+            sleep(5)
+        except Exception,e: 
+            if e.status == 409:
+                print ( "VM %s probably has running on specific host with only allow manual migration, or disallow migration..." 
+                        %(VMNAME2) )
+            else:
+                print str(e)
     else:
         if ( DEBUG > 0 ):
             print "It's not necessary to migrate " + VMNAME2
