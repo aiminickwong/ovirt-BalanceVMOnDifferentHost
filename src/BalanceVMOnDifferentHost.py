@@ -250,8 +250,9 @@ try:
                     for line in f:
                         if vm.get_name() == line.strip():
                             SKIPVM = True
+                            if( DEBUG > 0):
+                                print "VM " + vm.get_name() + " is on file " + VMIGNORE + "...skipping"
                 if SKIPVM:
-                    print "VM " + vm.get_name() + " is on file " + VMIGNORE + "...skipping"
                     continue
                 else:
                     if( DEBUG > 0):
