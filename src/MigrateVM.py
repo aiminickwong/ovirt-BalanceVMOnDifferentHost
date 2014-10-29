@@ -35,10 +35,7 @@ from optparse import OptionParser
 from string import count
 import ConfigParser
 
-
-#FIXME: make DEBUG an optional parmeter
-# Set > 0 if you whant print terminal information
-DEBUG = 1
+DEBUG = 0
 
 VERSION = "0.1"
 
@@ -53,7 +50,7 @@ EXIT_ON = ''
 
 
 parser = OptionParser()
-parser = OptionParser(usage="%prog --authfile AUTHFILE --vmname1 VM1 --vmname2 VM2", version="%prog Version: " + VERSION)
+parser = OptionParser(usage="%prog [--debug NUMBER] --authfile AUTHFILE --vmname1 VM1 --vmname2 VM2", version="%prog Version: " + VERSION)
 
 parser.add_option("--authfile", type="string",dest="AUTH_FILE", 
                   help="Authorization File name")
@@ -63,6 +60,9 @@ parser.add_option("--vmname1", type="string",dest="VMNAME1",
 
 parser.add_option("--vmname2", type="string", dest="VMNAME2", 
                   help="VM name that may be migratad")
+
+parser.add_option("-d", "--debug", type="int",dest="DEBUGOPT",
+                  help="Print debug information")
 
 (options, args) = parser.parse_args()
 
@@ -82,6 +82,11 @@ AUTH_FILE = options.AUTH_FILE
 VMNAME1 = options.VMNAME1
 VMNAME2 = options.VMNAME2
 
+if options.DEBUGOPT:
+    if type( options.DEBUGOPT ) == int:
+        DEBUG = int( options.DEBUGOPT )
+else:
+    DEBUG = 0
 
 if( DEBUG > 0 ):
     print "Authorization filename: '" + AUTH_FILE + "'"
@@ -143,7 +148,8 @@ try:
         sys.exit(1)
     vm2 = api.vms.get(name=VMNAME2)
     if vm2 == None:
-        print "VM: '" + VMNAME2 + "' doesn't exist... Exit"
+        if( DEBUG > 0 ):
+            print "VM: '" + VMNAME2 + "' doesn't exist... Exit"
         sys.exit(1)
     
     # check if VM is not the same
@@ -195,6 +201,9 @@ try:
 except:
     if EXIT_ON == '':
         print 'Error: Connection failed to server: ' + ENGINE_CONN
+    elif EXIT_ON == 'GET_VM':
+        if( DEBUG > 0 ):
+            print "Error on getting vm stat, probably doesn't exist and this error could be ignored"
     else:
         print 'Error on ' + EXIT_ON
 finally:

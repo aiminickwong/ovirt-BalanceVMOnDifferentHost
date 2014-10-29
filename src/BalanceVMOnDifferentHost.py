@@ -38,9 +38,7 @@ import os.path
 import re
 from subprocess import call
 
-#FIXME: make DEBUG an optional parameter
-# Set > 0 if you whant print terminal information
-DEBUG = 1
+DEBUG = 0
 
 VERSION = "0.1"
 
@@ -54,7 +52,7 @@ SPASSWORD = ''
 EXIT_ON = ''
 
 parser = OptionParser()
-usagestr = "usage: %prog [options] --authfile AUTHFILE --datacenter DATACENTERNAME --vmignore filename-of-vms-to-ignore"
+usagestr = "usage: %prog [--debug NUMBER] --authfile AUTHFILE --datacenter DATACENTERNAME --vmignore filename-of-vms-to-ignore"
 
 parser = OptionParser(usage=usagestr, version="%prog Version: " + VERSION)
 
@@ -66,6 +64,9 @@ parser.add_option("--datacenter", type="string",dest="DATACENTER",
 
 parser.add_option("--vmignore", type="string",dest="VMIGNORE", 
                   help="File name of VMs to ignore")
+
+parser.add_option("-d", "--debug", type="int",dest="DEBUGOPT",
+                  help="Print debug information")
 
 (options, args) = parser.parse_args()
 
@@ -84,6 +85,12 @@ if options.VMIGNORE == "" or not options.VMIGNORE:
 AUTH_FILE = options.AUTH_FILE
 DATACENTER = options.DATACENTER
 VMIGNORE = options.VMIGNORE
+
+if options.DEBUGOPT:
+    if type( options.DEBUGOPT ) == int:
+        DEBUG = int( options.DEBUGOPT )
+else:
+    DEBUG = 0
 
 if( DEBUG > 0 ):
     print "Authorization filename: '" + AUTH_FILE + "'"
@@ -148,7 +155,8 @@ def checkDCExist( datacentername ):
         print "Error: DC " + datacentername + " doesn't exist... Exit"
         sys.exit(1)
     else:
-        print "DC " + datacentername + " is present...continue"
+        if( DEBUG > 0 ):
+            print "DC " + datacentername + " is present...continue"
     dcstat = dc.get_status().state
     if dcstat != "up":
         print "Error: DC " + datacentername + " is not up... Exit"
@@ -166,7 +174,8 @@ def checkVMNameAndOdd( vmname ):
             else:
                 return True
     except:
-        print "Error when trying to find pattern"
+        if( DEBUG > 0 ):
+            print "Error when trying to find pattern"
         return False
 
 def vmNamePlusOne( vmname ):
@@ -192,8 +201,10 @@ def launchMigration( vm1, vm2 ):
         fexec = d + "/MigrateVM.py"
         if( DEBUG > 1):
             print ( "Full path of executable: %s" %(fexec) )
-        
-        call([ fexec, "--authfile", AUTH_FILE, "--vmname1", vm1, "--vmname2", vm2 ])
+        if DEBUG > 0:
+            call([ fexec, "--debug", str(DEBUG), "--authfile", AUTH_FILE, "--vmname1", vm1, "--vmname2", vm2 ])
+        else:
+            call([ fexec, "--authfile", AUTH_FILE, "--vmname1", vm1, "--vmname2", vm2 ])
     except Exception,e:
         if( DEBUG > 0):
             print "Error launching MigrateVM.py...Skip"
@@ -253,7 +264,8 @@ try:
                         if (vm2 != None) and vm2 != "":
                             launchMigration(vm1, vm2)
             else:
-                print "VM " + vm.get_name() + " is not up...skipping"
+                if( DEBUG > 0 ):
+                    print "VM " + vm.get_name() + " is not up...skipping"
     
 except:
     if EXIT_ON == '':
