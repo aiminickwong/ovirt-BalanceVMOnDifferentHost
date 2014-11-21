@@ -37,7 +37,7 @@ import ConfigParser
 
 DEBUG = 0
 
-VERSION = "0.2"
+VERSION = "0.2.1"
 
 SHOSTNAME = ''
 SPORT = ''

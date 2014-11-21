@@ -40,7 +40,7 @@ from subprocess import call
 
 DEBUG = 0
 
-VERSION = "0.2"
+VERSION = "0.2.1"
 
 SHOSTNAME = ''
 SPORT = ''
@@ -227,7 +227,13 @@ try:
     
     # list cluster
     EXIT_ON = 'LISTCLUSTER'
-    clulist = api.clusters.list( "datacenter=" + DATACENTER )
+    # Salvati 21-11-2014
+    # correct cluster list from
+    # clulist = api.clusters.list( "datacenter=" + DATACENTER )
+    # to opbtain list from dc object:
+    # http://lists.ovirt.org/pipermail/users/2014-November/029417.html
+    dc = api.datacenters.get(name = DATACENTER)
+    clulist = dc.clusters.list()
     for clu in clulist:
         if( DEBUG > 0):
             print "Found cluster " + clu.get_name()
